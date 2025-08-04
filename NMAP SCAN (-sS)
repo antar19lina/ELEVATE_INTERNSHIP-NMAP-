@@ -1,0 +1,132 @@
+# 🛡️ Network Port Scan Report
+
+**📅 Date of Scan:** `2025-08-04`  
+**🧰 Tool Used:** `Nmap`  
+**🎯 Target:** Local/External Network  
+**🔍 Scan Type:** TCP SYN & Aggressive Scan  
+**🧪 Scope:** Port Enumeration, OS & Service Detection
+
+---
+
+## 📊 Summary of Findings
+
+| 🔢 Port | 📡 State | 🧩 Service         | 📝 Description                                |
+|--------:|:--------:|-------------------|-----------------------------------------------|
+| 135     | Open     | msrpc             | Microsoft RPC service, used for DCOM, WMI     |
+| 139     | Open     | netbios-ssn       | NetBIOS Session Service                       |
+| 445     | Open     | microsoft-ds      | SMB over TCP (File sharing, Windows auth)     |
+| 902     | Open     | iss-realsecure    | VMware ESXi remote management port            |
+| 912     | Open     | apex-mesh         | Possibly used by APEX Mesh or custom apps     |
+| 16992   | Open     | amt-soap-http     | Intel AMT (vPro remote management)            |
+
+---
+
+# 🔍Identify Potential Security Risks
+
+This section outlines the potential security risks associated with each of the open ports discovered during the scan. It also includes practical mitigation recommendations.
+
+---
+
+## 🔸 Port **135/tcp** — `msrpc`
+
+- **🧠 Description:** Microsoft Remote Procedure Call (RPC) used for remote management, WMI, and DCOM services.
+- **⚠️ Risks:**
+  - Enables **remote code execution** via DCOM vulnerabilities.
+  - Can be used for **lateral movement** inside Windows networks.
+  - Targeted in worms like **Blaster** and tools like **Metasploit**.
+- **✅ Recommendations:**
+  - Block this port on external interfaces.
+  - Restrict WMI and RPC usage to **trusted subnets**.
+  - Enforce **strong authentication** and **least privilege** for RPC use.
+
+---
+
+## 🔸 Port **139/tcp** — `netbios-ssn`
+
+- **🧠 Description:** NetBIOS Session Service, mainly used for Windows file/printer sharing (legacy).
+- **⚠️ Risks:**
+  - Susceptible to **null session attacks** and **info leakage**.
+  - Enables enumeration of shares, users, and OS details.
+  - **Deprecated protocol** not suitable for modern environments.
+- **✅ Recommendations:**
+  - Disable NetBIOS over TCP/IP if not required.
+  - Use **firewalls** to limit access to trusted hosts.
+  - Replace with SMBv2/3 and enforce **network segmentation**.
+
+---
+
+## 🔸 Port **445/tcp** — `microsoft-ds`
+
+- **🧠 Description:** Server Message Block (SMB) over TCP/IP. Used for file sharing, remote login, and domain communication.
+- **⚠️ Risks:**
+  - Infamous for enabling **WannaCry**, **NotPetya**, and **EternalBlue** exploits.
+  - Frequently used for **lateral movement**, **credential harvesting**, and **RCE**.
+  - Exposing this port to the internet is extremely risky.
+- **✅ Recommendations:**
+  - **Disable SMBv1**, enable SMBv2 or v3 with encryption.
+  - Block externally and restrict internally using **ACLs**.
+  - Keep systems patched (especially **MS17-010**).
+
+---
+
+## 🔸 Port **902/tcp** — `iss-realsecure`
+
+- **🧠 Description:** Used by VMware ESXi/Server for remote management and VM console access.
+- **⚠️ Risks:**
+  - If exposed, may allow attackers to interact with hypervisors or VMs.
+  - Older versions may have **auth bypass**, **DoS**, or **open proxy** flaws.
+- **✅ Recommendations:**
+  - Restrict to **internal-only management networks**.
+  - Ensure VMware software is **fully updated**.
+  - Monitor and restrict access to known IPs via **firewalls or VPN**.
+
+---
+
+## 🔸 Port **912/tcp** — `apex-mesh` *(Uncommon/Custom Service)*
+
+- **🧠 Description:** Likely a **custom** or **proprietary** service (possibly internal APEX Mesh system).
+- **⚠️ Risks:**
+  - Unknown services can harbor **undocumented vulnerabilities**.
+  - Could expose **debug interfaces**, **admin consoles**, or **insecure APIs**.
+- **✅ Recommendations:**
+  - Investigate the application using this port.
+  - If unused, **disable the service**.
+  - Perform **manual testing** or **fuzzing** to identify security flaws.
+
+---
+
+## 🔸 Port **16992/tcp** — `amt-soap-http`
+
+- **🧠 Description:** Intel Active Management Technology (AMT) used for out-of-band management via Intel vPro.
+- **⚠️ Risks:**
+  - Known for **critical vulnerabilities** like **CVE-2017-5689**.
+  - Runs **below the OS**, allowing **stealthy backdoors** and persistence.
+  - Often left **unsecured**, giving remote control over entire systems.
+- **✅ Recommendations:**
+  - Disable Intel AMT if not used (via **BIOS/UEFI**).
+  - Require **TLS**, **authentication**, and **IP whitelisting**.
+  - Monitor for traffic on port 16992 as a **threat indicator**.
+
+---
+
+## ✅ 📋 Risk Summary Table
+
+| 🔢 Port | 📛 Risk Level | 🧨 Primary Risk |
+|--------:|:-------------:|----------------|
+| **135** | 🔴 High        | RPC-based RCE, lateral movement |
+| **139** | 🟠 Medium      | Info leakage, legacy attacks   |
+| **445** | 🔴 Critical     | SMB exploits, ransomware       |
+| **902** | 🟠 Medium      | VM management exposure         |
+| **912** | 🟡 Unknown     | Unclassified, possibly insecure |
+| **16992** | 🔴 Critical   | Remote backdoor via Intel AMT |
+
+---
+
+> 🛡️ **Note:** Always scan and remediate within your legal scope. Unauthorized scanning can be illegal and unethical.
+
+
+## 🧰 Scan Command Used
+
+```bash
+nmap -A -v <target-ip>
+
